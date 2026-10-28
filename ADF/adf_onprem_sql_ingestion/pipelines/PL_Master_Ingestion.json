@@ -1,0 +1,172 @@
+{
+  "name": "PL_Master_Ingestion",
+  "properties": {
+    "parameters": {
+      "PipelineName": {
+        "type": "string",
+        "defaultValue": "PL_Master_Ingestion"
+      }
+    },
+    "activities": [
+      {
+        "name": "Lookup_Config",
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "SqlServerSource",
+            "sqlReaderQuery": "SELECT ConfigID, SourceSystem, SourceSchema, SourceTable, TargetContainer, TargetFolder, LoadType, WatermarkColumn FROM dbo.ETL_Config WHERE IsActive = 1"
+          },
+          "dataset": {
+            "referenceName": "DS_ETL_Config",
+            "type": "DatasetReference"
+          },
+          "firstRowOnly": false
+        }
+      },
+      {
+        "name": "ForEach_Table",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "Lookup_Config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Lookup_Config').output.value",
+            "type": "Expression"
+          },
+          "isSequential": false,
+          "batchCount": 5,
+          "activities": [
+            {
+              "name": "Lookup_Watermark",
+              "type": "Lookup",
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": {
+                    "value": "@concat('SELECT LastWatermark FROM dbo.ETL_Watermark WHERE ConfigID = ', item().ConfigID)",
+                    "type": "Expression"
+                  }
+                },
+                "dataset": {
+                  "referenceName": "DS_ETL_Config",
+                  "type": "DatasetReference"
+                },
+                "firstRowOnly": true
+              }
+            },
+            {
+              "name": "Get_Current_Watermark",
+              "type": "Lookup",
+              "dependsOn": [
+                {
+                  "activity": "Lookup_Watermark",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": {
+                    "value": "@if(equals(item().LoadType,'FULL'), 'SELECT CAST(NULL AS datetime2) AS CurrentWatermark', concat('SELECT MAX(', item().WatermarkColumn, ') AS CurrentWatermark FROM ', item().SourceSchema, '.', item().SourceTable))",
+                    "type": "Expression"
+                  }
+                },
+                "dataset": {
+                  "referenceName": "DS_ETL_Config",
+                  "type": "DatasetReference"
+                },
+                "firstRowOnly": true
+              }
+            },
+            {
+              "name": "Copy_Data",
+              "type": "Copy",
+              "dependsOn": [
+                {
+                  "activity": "Get_Current_Watermark",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource",
+                  "sqlReaderQuery": {
+                    "value": "@if(equals(item().LoadType,'FULL'), concat('SELECT * FROM ', item().SourceSchema, '.', item().SourceTable), if(equals(activity('Lookup_Watermark').output.firstRow.LastWatermark, null), concat('SELECT * FROM ', item().SourceSchema, '.', item().SourceTable, ' WHERE ', item().WatermarkColumn, ' <= ''', activity('Get_Current_Watermark').output.firstRow.CurrentWatermark, ''''), concat('SELECT * FROM ', item().SourceSchema, '.', item().SourceTable, ' WHERE ', item().WatermarkColumn, ' > ''', activity('Lookup_Watermark').output.firstRow.LastWatermark, ''' AND ', item().WatermarkColumn, ' <= ''', activity('Get_Current_Watermark').output.firstRow.CurrentWatermark, '''')))",
+                    "type": "Expression"
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings"
+                  }
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "DS_SQLServer_Source",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "SchemaName": "@item().SourceSchema",
+                    "TableName": "@item().SourceTable"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "DS_ADLS_Raw",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "ContainerName": "@item().TargetContainer",
+                    "FolderPath": "@item().TargetFolder",
+                    "FileName": "@concat(item().SourceTable, '_', formatDateTime(utcnow(),'yyyyMMdd_HHmmss'), '.parquet')"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update_Watermark",
+              "type": "SqlServerStoredProcedure",
+              "dependsOn": [
+                {
+                  "activity": "Copy_Data",
+                  "dependencyConditions": ["Succeeded"]
+                }
+              ],
+              "typeProperties": {
+                "storedProcedureName": "dbo.usp_UpdateWatermark",
+                "storedProcedureParameters": {
+                  "ConfigID": {
+                    "value": {
+                      "value": "@item().ConfigID",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "CurrentWatermark": {
+                    "value": {
+                      "value": "@activity('Get_Current_Watermark').output.firstRow.CurrentWatermark",
+                      "type": "Expression"
+                    },
+                    "type": "DateTime"
+                  }
+                }
+              },
+              "linkedServiceName": {
+                "referenceName": "LS_OnPrem_SQLServer",
+                "type": "LinkedServiceReference"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

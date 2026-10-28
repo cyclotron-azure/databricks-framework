@@ -1,0 +1,24 @@
+{
+  "name": "LS_OnPremSQL",
+  "type": "Microsoft.DataFactory/factories/linkedservices",
+  "properties": {
+    "annotations": [],
+    "type": "SqlServer",
+    "typeProperties": {
+      "connectionString": "Data Source=<YOUR_SQL_SERVER_HOST>,<PORT>;Initial Catalog=<YOUR_DATABASE_NAME>;",
+      "userName": "<YOUR_SQL_USERNAME>",
+      "password": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "LS_AzureKeyVault",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "onprem-sql-password"
+      }
+    },
+    "connectVia": {
+      "referenceName": "SelfHostedIR",
+      "type": "IntegrationRuntimeReference"
+    }
+  }
+}

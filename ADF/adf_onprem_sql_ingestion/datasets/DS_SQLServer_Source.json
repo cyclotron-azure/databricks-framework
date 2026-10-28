@@ -1,0 +1,28 @@
+{
+  "name": "DS_SQLServer_Source",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "LS_OnPrem_SQLServer",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "SchemaName": {
+        "type": "string"
+      },
+      "TableName": {
+        "type": "string"
+      }
+    },
+    "type": "SqlServerTable",
+    "typeProperties": {
+      "schema": {
+        "value": "@dataset().SchemaName",
+        "type": "Expression"
+      },
+      "table": {
+        "value": "@dataset().TableName",
+        "type": "Expression"
+      }
+    }
+  }
+}
