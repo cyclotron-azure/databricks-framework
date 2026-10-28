@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    unit_test_framework_job:
+      name: ${bundle.name}-${bundle.target}-job
+      tasks:
+        - task_key: run_customer_silver
+          notebook_task:
+            notebook_path: ../src/databricks_unit_test_framework/notebook_entry.py
+            base_parameters:
+              source_table: ${var.catalog}.${var.schema}.bronze_customers
+              target_table: ${var.catalog}.${var.schema}.silver_customers
+          job_cluster_key: job_cluster
+
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+            spark_env_vars:
+              PYTHONPATH: /Workspace${workspace.file_path}/src
+
+      permissions:
+        - level: CAN_MANAGE
+          group_name: data-engineering

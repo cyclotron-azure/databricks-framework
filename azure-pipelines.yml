@@ -1,0 +1,36 @@
+trigger:
+  - main
+
+pr:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.11'
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install uv
+      uv sync
+    displayName: Install dependencies
+
+  - script: |
+      uv run pytest \
+        --cov=src/databricks_unit_test_framework \
+        --cov-report=term-missing \
+        --cov-report=xml:coverage.xml
+    displayName: Unit tests and coverage
+
+  - script: |
+      curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+      databricks bundle validate --target dev
+    displayName: Validate Databricks bundle
+
+  # Configure Azure DevOps service connection/OIDC according to your
+  # Databricks authentication setup before enabling deployment.

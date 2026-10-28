@@ -1,0 +1,17 @@
+{
+  "name": "DS_OnPremSQL_Source",
+  "type": "Microsoft.DataFactory/factories/datasets",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "LS_OnPremSQL",
+      "type": "LinkedServiceReference"
+    },
+    "annotations": [],
+    "type": "SqlServerTable",
+    "schema": [],
+    "typeProperties": {
+      "schema": "dbo",
+      "table": "<YOUR_TABLE_NAME>"
+    }
+  }
+}

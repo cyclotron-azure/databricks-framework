@@ -1,0 +1,14 @@
+{
+  "name": "DS_ETL_Config",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "LS_OnPrem_SQLServer",
+      "type": "LinkedServiceReference"
+    },
+    "type": "SqlServerTable",
+    "typeProperties": {
+      "schema": "dbo",
+      "table": "ETL_Config"
+    }
+  }
+}

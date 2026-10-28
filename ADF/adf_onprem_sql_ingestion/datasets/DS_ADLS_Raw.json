@@ -1,0 +1,39 @@
+{
+  "name": "DS_ADLS_Raw",
+  "properties": {
+    "linkedServiceName": {
+      "referenceName": "LS_ADLS_Gen2",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "ContainerName": {
+        "type": "string"
+      },
+      "FolderPath": {
+        "type": "string"
+      },
+      "FileName": {
+        "type": "string"
+      }
+    },
+    "type": "Parquet",
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": {
+          "value": "@dataset().ContainerName",
+          "type": "Expression"
+        },
+        "folderPath": {
+          "value": "@dataset().FolderPath",
+          "type": "Expression"
+        },
+        "fileName": {
+          "value": "@dataset().FileName",
+          "type": "Expression"
+        }
+      },
+      "compressionCodec": "snappy"
+    }
+  }
+}
