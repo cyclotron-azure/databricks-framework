@@ -2,7 +2,7 @@
   "name": "DS_ADLS_Raw",
   "properties": {
     "linkedServiceName": {
-      "referenceName": "LS_ADLS_Gen2",
+      "referenceName": "LS_ADLSGen2",
       "type": "LinkedServiceReference"
     },
     "parameters": {

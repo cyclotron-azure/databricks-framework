@@ -160,7 +160,7 @@
                 }
               },
               "linkedServiceName": {
-                "referenceName": "LS_OnPrem_SQLServer",
+                "referenceName": "LS_OnPremSQL",
                 "type": "LinkedServiceReference"
               }
             }
