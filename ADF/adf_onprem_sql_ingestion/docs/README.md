@@ -15,6 +15,9 @@ Lookup_Config (active FULL rows in dbo.ETL_Config)
 
 1. In ADF Manage -> Integration runtimes, create `SelfHostedIR` and install it
     on a Windows machine that can reach your SQL Server and ADLS endpoints.
+    Install a supported 64-bit Java runtime on the same machine for Parquet
+    serialization. Ensure SelfHostedIR can discover Java (for OpenJDK, configure
+    `JAVA_HOME`) and restart the integration runtime service before the first run.
 2. Configure the placeholders in `linkedservices/linkedService_AzureKeyVault.json`,
     `linkedService_OnPremSQL.json`, and `linkedService_ADLS.json`. Store
     `onprem-sql-password` and `adls-account-key` in Key Vault. Give the factory's
