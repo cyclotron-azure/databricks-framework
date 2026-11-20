@@ -1,0 +1,101 @@
+{
+  "name": "PL_Master_Full_Load",
+  "properties": {
+    "concurrency": 1,
+    "activities": [
+      {
+        "name": "Lookup_Config",
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "SqlServerSource",
+            "sqlReaderQuery": "SELECT SourceSchema, SourceTable, TargetContainer, TargetFolder FROM dbo.ETL_Config WHERE IsActive = 1 AND LoadType = 'FULL' ORDER BY ConfigID"
+          },
+          "dataset": {
+            "referenceName": "DS_ETL_Config",
+            "type": "DatasetReference"
+          },
+          "firstRowOnly": false
+        }
+      },
+      {
+        "name": "ForEach_Table",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "Lookup_Config",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Lookup_Config').output.value",
+            "type": "Expression"
+          },
+          "isSequential": true,
+          "activities": [
+            {
+              "name": "Copy_Table_To_ADLS",
+              "type": "Copy",
+              "policy": {
+                "timeout": "0.02:00:00",
+                "retry": 2,
+                "retryIntervalInSeconds": 30
+              },
+              "typeProperties": {
+                "source": {
+                  "type": "SqlServerSource"
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "storeSettings": {
+                    "type": "AzureBlobFSWriteSettings"
+                  },
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings"
+                  }
+                }
+              },
+              "inputs": [
+                {
+                  "referenceName": "DS_SQLServer_Source",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "SchemaName": {
+                      "value": "@item().SourceSchema",
+                      "type": "Expression"
+                    },
+                    "TableName": {
+                      "value": "@item().SourceTable",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "DS_ADLS_Raw",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "ContainerName": {
+                      "value": "@item().TargetContainer",
+                      "type": "Expression"
+                    },
+                    "FolderPath": {
+                      "value": "@concat(item().TargetFolder, '/run_id=', pipeline().RunId)",
+                      "type": "Expression"
+                    },
+                    "FileName": {
+                      "value": "@concat(item().SourceTable, '.parquet')",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

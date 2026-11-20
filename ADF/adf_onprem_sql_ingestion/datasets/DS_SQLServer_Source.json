@@ -2,7 +2,7 @@
   "name": "DS_SQLServer_Source",
   "properties": {
     "linkedServiceName": {
-      "referenceName": "LS_OnPrem_SQLServer",
+      "referenceName": "LS_OnPremSQL",
       "type": "LinkedServiceReference"
     },
     "parameters": {

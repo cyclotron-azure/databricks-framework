@@ -2,7 +2,7 @@
   "name": "DS_ETL_Config",
   "properties": {
     "linkedServiceName": {
-      "referenceName": "LS_OnPrem_SQLServer",
+      "referenceName": "LS_OnPremSQL",
       "type": "LinkedServiceReference"
     },
     "type": "SqlServerTable",
